@@ -36,26 +36,29 @@ function M.plugins_on_close()
 end
 
 function M.close()
-  pcall(vim.cmd, [[autocmd! Zen]])
-  pcall(vim.cmd, [[augroup! Zen]])
+  vim.api.nvim_exec_autocmds("BufWinLeave", {buffer = 0})
+  pcall(vim.cmd --[[@as fun(cmd: string)]], [[autocmd! Zen]])
+  pcall(vim.cmd --[[@as fun(cmd: string)]], [[augroup! Zen]])
 
   -- Change the parent window's cursor position to match
   -- the cursor position in the zen-mode window.
   if M.parent and M.win then
-    -- Ensure that the parent window has the same buffer
-    -- as the zen-mode window.
-    if vim.api.nvim_win_get_buf(M.parent) == vim.api.nvim_win_get_buf(M.win) then
-      -- Then, update the parent window's cursor position.
-      vim.api.nvim_win_set_cursor(M.parent, vim.api.nvim_win_get_cursor(M.win))
+
+    local myBuffer = vim.api.nvim_win_get_buf(M.win)
+    local isSameBuffer = vim.api.nvim_win_get_buf(M.parent) == myBuffer
+    if not isSameBuffer then
+      vim.api.nvim_win_set_buf(M.parent, myBuffer)
     end
+
+    vim.api.nvim_win_set_cursor(M.parent, vim.api.nvim_win_get_cursor(M.win))
   end
 
   if M.win and vim.api.nvim_win_is_valid(M.win) then
-    vim.api.nvim_win_close(M.win, { force = true })
+    vim.api.nvim_win_close(M.win, true)
     M.win = nil
   end
   if M.bg_win and vim.api.nvim_win_is_valid(M.bg_win) then
-    vim.api.nvim_win_close(M.bg_win, { force = true })
+    vim.api.nvim_win_close(M.bg_win, true)
     M.bg_win = nil
   end
   if M.bg_buf and vim.api.nvim_buf_is_valid(M.bg_buf) then
@@ -70,6 +73,8 @@ function M.close()
       vim.api.nvim_set_current_win(M.parent)
     end
   end
+
+  vim.api.nvim_exec_autocmds("BufWinEnter", {buffer = 0})
 end
 
 function M.open(opts)
@@ -147,6 +152,7 @@ end
 
 --- @param opts ZenOptions
 function M.create(opts)
+  ---@type ZenOptions
   opts = vim.tbl_deep_extend("force", {}, config.options, opts or {})
   config.colors(opts)
   M.opts = opts
@@ -156,7 +162,7 @@ function M.create(opts)
   M.plugins_on_open()
 
   M.bg_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(M.bg_buf, "filetype", "zenmode-bg")
+  vim.api.nvim_set_option_value("filetype", "zenmode-bg", {buf=M.bg_buf})
   local ok
   ok, M.bg_win = pcall(vim.api.nvim_open_win, M.bg_buf, false, {
     relative = "editor",
@@ -188,12 +194,10 @@ function M.create(opts)
   M.fix_hl(M.win)
 
   for k, v in pairs(opts.window.options or {}) do
-    vim.api.nvim_win_set_option(M.win, k, v)
+    vim.api.nvim_set_option_value(k, v, {win=M.win})
   end
 
-  if type(opts.on_open) == "function" then
-    opts.on_open(M.win)
-  end
+  opts.on_open(M.win)
 
   -- fix layout since some plugins might have altered the window
   M.fix_layout()
@@ -212,9 +216,13 @@ function M.create(opts)
       autocmd BufWinEnter * lua require("zen-mode.view").on_buf_win_enter()
     augroup end]]
 
-  vim.api.nvim_exec(augroup:format(M.win, M.win), false)
+  vim.api.nvim_exec2(augroup:format(M.win, M.win), {output=false})
 end
 
+-- TODO: normal and other fields in this codebase are actually enums.
+
+---@param win integer
+---@param normal string?
 function M.fix_hl(win, normal)
   local cwin = vim.api.nvim_get_current_win()
   if cwin ~= win then
@@ -229,6 +237,7 @@ function M.fix_hl(win, normal)
   vim.api.nvim_set_current_win(cwin)
 end
 
+---@param win integer
 function M.is_float(win)
   local opts = vim.api.nvim_win_get_config(win)
   return opts and opts.relative and opts.relative ~= ""

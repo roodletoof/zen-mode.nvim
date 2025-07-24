@@ -77,7 +77,8 @@ local defaults = {
     },
   },
   -- callback where you can add custom code when the zen window opens
-  on_open = function(_win) end,
+  ---@param _win integer
+  on_open = function(_win) local _ = _win end,
   -- callback where you can add custom code when the zen window closes
   on_close = function() end,
 }
@@ -85,12 +86,13 @@ local defaults = {
 ---@type ZenOptions
 M.options = nil
 
+---@param options ZenOptions?
 function M.colors(options)
   options = options or M.options
-  local normal = util.get_hl("Normal")
-  if normal then
-    if normal.background then
-      local bg = util.darken(normal.background, options.window.backdrop)
+  local bg = util.get_bg("Normal")
+  if bg then
+    if bg then
+      bg = util.darken(bg, options.window.backdrop)
       vim.cmd(("highlight default ZenBg guibg=%s guifg=%s"):format(bg, bg))
     else
       vim.cmd("highlight default link ZenBg Normal")

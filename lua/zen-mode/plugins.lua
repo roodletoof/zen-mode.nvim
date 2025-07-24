@@ -34,6 +34,7 @@ end
 -- changes the kitty font size
 -- it's a bit glitchy, but it works
 function M.kitty(state, disable, opts)
+  local _ = state
   if not vim.fn.executable("kitty") then
     return
   end
@@ -49,6 +50,7 @@ end
 
 -- changes the alacritty font size
 function M.alacritty(state, disable, opts)
+  local _ = state
   if not vim.fn.executable("alacritty") then
     return
   end
@@ -65,7 +67,12 @@ end
 
 -- changes the wezterm font size
 function M.wezterm(state, disable, opts)
-  local stdout = vim.loop.new_tty(1, false)
+  local _ = state
+  local stdout = vim.uv.new_tty(1, false)
+  if stdout == nil then
+    vim.notify("vim.uv.new_tty(1, false) returned nil", vim.log.levels.ERROR)
+    return
+  end
   if disable then
     -- Requires tmux setting or no effect: set-option -g allow-passthrough on
     stdout:write(
@@ -94,6 +101,7 @@ function M.twilight(state, disable)
 end
 
 function M.tmux(state, disable, opts)
+  local _ = opts
   if not vim.env.TMUX then
     return
   end
@@ -151,10 +159,11 @@ function M.neovide(state, disable, opts)
 end
 
 function M.diagnostics(state, disable)
+  local _ = state
   if disable then
-    vim.diagnostic.disable(0)
+    vim.diagnostic.enable(false)
   else
-    vim.diagnostic.enable(0)
+    vim.diagnostic.enable(true)
   end
 end
 
