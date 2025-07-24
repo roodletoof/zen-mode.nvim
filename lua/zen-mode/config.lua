@@ -10,7 +10,7 @@ local defaults = {
     -- height and width can be:
     -- * an asbolute number of cells when > 1
     -- * a percentage of the width / height of the editor when <= 1
-    width = 120, -- width of the zen window
+    width = 80, -- width of the zen window
     height = 1, -- height of the zen window
     -- by default, no options are changed in for the zen window
     -- uncomment any of the options below, or add other vim.wo options you want to apply
@@ -100,6 +100,7 @@ function M.colors(options)
   end
 end
 
+---@param options ZenOptions?
 function M.setup(options)
   M.options = vim.tbl_deep_extend("force", {}, defaults, options or {})
   M.colors()
