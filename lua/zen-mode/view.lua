@@ -258,16 +258,16 @@ function M.on_buf_win_enter()
   end
 end
 
+
 function M.on_win_enter()
   local win = vim.api.nvim_get_current_win()
-  if win ~= M.win and not M.is_float(win) then
-    -- HACK: when returning from a float window, vim initially enters the parent window.
-    -- give 10ms to get back to the zen window before closing
-    vim.defer_fn(function()
-      if vim.api.nvim_get_current_win() ~= M.win then
-        M.close()
-      end
-    end, 10)
+  if not M.is_float(win) then
+    vim.defer_fn(
+      function ()
+        vim.api.nvim_set_current_win(M.win)
+      end,
+      10
+    )
   end
 end
 
