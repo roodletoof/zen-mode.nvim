@@ -94,6 +94,8 @@ function M.toggle(opts)
   end
 end
 
+---@param num number
+---@return integer
 function M.round(num)
   return math.floor(num + 0.5)
 end
@@ -120,19 +122,26 @@ function M.layout(opts)
   local width = M.resolve(vim.o.columns, opts.window.width)
   local height = M.resolve(M.height(), opts.window.height)
 
-  return {
-    width = M.round(width),
+  -- just align the floating window *as if* you had to center a window of the
+  -- specified width, but actually extend the window all the way to the right.
+  local actual_width = vim.o.columns
+  local left_margin = (actual_width - width) / 2
+  local actual_floating_width = actual_width - left_margin
+  ---@class Rect
+  local rect = {
+    width = M.round(actual_floating_width),
     height = M.round(height),
     col = M.round((vim.o.columns - width) / 2),
     row = M.round((M.height() - height) / 2),
   }
+  return rect
 end
 
 -- adjusts col/row if window was resized
 function M.fix_layout(win_resized)
   if M.is_open() then
+    local l = M.layout(M.opts)
     if win_resized then
-      local l = M.layout(M.opts)
       vim.api.nvim_win_set_config(M.win, { width = l.width, height = l.height })
       vim.api.nvim_win_set_config(M.bg_win, { width = vim.o.columns, height = M.height() })
     end
@@ -145,7 +154,7 @@ function M.fix_layout(win_resized)
     local wcol = type(cfg.col) == "number" and cfg.col or cfg.col[false]
     local wrow = type(cfg.row) == "number" and cfg.row or cfg.row[false]
     if wrow ~= row or wcol ~= col then
-      vim.api.nvim_win_set_config(M.win, { col = col, row = row, relative = "editor" })
+      vim.api.nvim_win_set_config(M.win, { col = l.col, row = l.row, relative = "editor" })
     end
   end
 end
