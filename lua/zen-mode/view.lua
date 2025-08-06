@@ -36,7 +36,6 @@ function M.plugins_on_close()
 end
 
 function M.close()
-  vim.api.nvim_exec_autocmds("BufWinLeave", {buffer = 0})
   pcall(vim.cmd --[[@as fun(cmd: string)]], [[autocmd! Zen]])
   pcall(vim.cmd --[[@as fun(cmd: string)]], [[augroup! Zen]])
 
@@ -73,8 +72,6 @@ function M.close()
       vim.api.nvim_set_current_win(M.parent)
     end
   end
-
-  vim.api.nvim_exec_autocmds("BufWinEnter", {buffer = 0})
 end
 
 function M.open(opts)
